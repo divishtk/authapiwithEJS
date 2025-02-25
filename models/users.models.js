@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt"
 
 const userSchema = new mongoose.Schema(
   {
@@ -10,7 +11,6 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      unique: true,
     },
     email: {
       type: String,
@@ -26,10 +26,22 @@ const userSchema = new mongoose.Schema(
     age: {
       type: String,
     },
+    posts :[
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"Post"
+      }
+    ]
   },
   {
     timestamps: true,
   }
 );
 
-export const user = mongoose.model("User", userSchema);
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    return next();
+  }
+});
+
+export const User = mongoose.model("User", userSchema);
