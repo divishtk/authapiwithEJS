@@ -1,24 +1,123 @@
 import express from "express";
 import bodyParser from "body-parser"; // For parsing JSON bodies
 import cookieParser from "cookie-parser";
-import userRouter from "./routes/user.routes.js"
-
-
+import { User } from "./models/users.models.js";
+import bcrypt from "bcrypt";
+import { generateAccessToken } from "./utils/jwt.utils.js";
+import { authMiddleware } from "./middlewares/auth.middleware.js";
 const app = express();
 app.use(express.static("./assets"));
 
-app.set('view engine','ejs');
-app.set('views','./views')
+app.set("view engine", "ejs");
+app.set("views", "./views");
 
 app.use(express.urlencoded({ extended: true })); // Parses form data
-app.use(
-    express.json()
-  );
-  app.use(cookieParser());
-  app.use(bodyParser.json());
+app.use(express.json());
+app.use(cookieParser());
+app.use(bodyParser.json());
 
-  app.use('/v1',userRouter)
+//app.use('/v1',userRouter)
 
+app.get("/", (req, res) => {
+  res.render("index");
+});
 
+app.post("/register", async (req, resp) => {
+  const { email, password, username, name, age } = req.body;
 
-export {app}
+  if (
+    [email, password, username, name, age].some(
+      (fields) => fields?.trim() === ""
+    )
+  ) {
+    return resp.status(500).json({
+      success: false,
+      error: "Please provide all fields!!",
+    });
+  }
+
+  const user = await User.findOne({ email });
+  if (user) {
+    return resp.status(501).json({
+      success: false,
+      error: "User already exists!!",
+    });
+  }
+  const salt = await bcrypt.genSalt(10);
+  const hashedPass = await bcrypt.hash(password, salt);
+
+  const createAcc = await User.create({
+    email,
+    username,
+    name,
+    age,
+    password: hashedPass,
+  });
+  await createAcc.save();
+
+  const token = await generateAccessToken({
+    email,
+    userid: createAcc._id,
+  });
+  resp.cookie("Token", token);
+  resp.send("Registered");
+});
+
+app.get("/login", async (req, resp) => {
+  resp.render("login");
+});
+
+app.get("/profile", authMiddleware, async (req, resp) => {
+  console.log(req.user)
+  resp.render("login");
+});
+
+app.post("/login", async (req, resp) => {
+  const { email, password } = req.body;
+  
+    if (
+      [email, password].some(
+        (fields) => fields?.trim() === ""
+      )
+    ) {
+      return resp.status(401).json({
+        success: false,
+        error: "Please provide all fields!!",
+      });
+    }
+  
+    const user = await User.findOne({ email });
+    if (!user) {
+      return resp.status(501).json({
+        success: false,
+        error: "Please create account!!",
+      });
+    }
+   
+    const checkPassword = await user.isMatchPassword(password);
+    if (!checkPassword) {
+        return resp.status(401).json({
+          success: false,
+          message: "Please provide the correct password",
+        });
+      }
+      
+      const token = await generateAccessToken({
+        email,
+        userid: user._id,
+      });
+      resp.cookie("Token", token);
+        
+      return resp.status(201).json({
+        success: true,
+        data: user,
+        message: "Logged in",
+      });
+});
+
+app.get("/logout", async (req, resp) => {
+  resp.clearCookie("Token");
+  resp.redirect("/login");
+});
+
+export { app };
