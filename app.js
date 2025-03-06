@@ -68,8 +68,8 @@ app.get("/login", async (req, resp) => {
 });
 
 app.get("/profile", authMiddleware, async (req, resp) => {
-  console.log(req.user)
-  resp.render("login");
+  const user = await User.findOne({ email: req.user.email });
+  resp.render("profile",{user});
 });
 
 app.post("/login", async (req, resp) => {
@@ -107,12 +107,13 @@ app.post("/login", async (req, resp) => {
         userid: user._id,
       });
       resp.cookie("Token", token);
+      resp.redirect("/profile");
         
-      return resp.status(201).json({
-        success: true,
-        data: user,
-        message: "Logged in",
-      });
+      // return resp.status(201).json({
+      //   success: true,
+      //   data: user,
+      //   message: "Logged in",
+      // });
 });
 
 app.get("/logout", async (req, resp) => {
