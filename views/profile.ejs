@@ -11,7 +11,13 @@
             <div class="flex w-full justify-end">
                 <a href="/logout" class="bg-red-500 rounded-md px-2 py-2 text-sm mb-4 inline-block">Logout</a>
             </div>
-            <h3 class="text-3xl mb-4"><span class="font-light">Hello</span>, <%=user.name%> 👋🏻</h3>
+            <div class="flex gap-3 items-start">
+                <div class="w-10 h-10 rounded-md ">
+                    <img src="/images/upload/<%=user.profilePic%>" class="w-full h-full object-cover rounded-md"/>
+                </div>
+                <h3 class="text-3xl mb-4"><span class="font-light">Hello</span>, <%=user.name%> 👋🏻</h3>
+            </div>
+         
             <h5 class="mb-5">You can create a new post!</h5>
             <form action="/post" method="POST" class="">
                 <textarea class="p-3 mb-3 outline-none w-1/2 bg-transparent resize-none border-2 border-zinc-800 rounded-md block" placeholder="What's on your mind?" name="post" required></textarea>

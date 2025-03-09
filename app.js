@@ -6,9 +6,13 @@ import { Post } from "./models/posts.models.js";
 import bcrypt from "bcrypt";
 import { generateAccessToken } from "./utils/jwt.utils.js";
 import { authMiddleware } from "./middlewares/auth.middleware.js";
-const app = express();
-app.use(express.static("./assets"));
 
+const app = express();
+
+
+
+app.use(express.static("./assets"));
+app.use(express.static("./public"));
 app.set("view engine", "ejs");
 app.set("views", "./views");
 
@@ -61,7 +65,7 @@ app.post("/register", async (req, resp) => {
     userid: createAcc._id,
   });
   resp.cookie("Token", token);
-  resp.send("Registered");
+  resp.redirect("/login");
 });
 
 app.get("/login", async (req, resp) => {
