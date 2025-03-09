@@ -69,15 +69,54 @@ app.get("/login", async (req, resp) => {
 });
 
 app.get("/profile", authMiddleware, async (req, resp) => {
-  const user = await User.findOne({ email: req.user.email });
+  const user = await User.findOne({ email: req.user.email }).populate("posts");
   resp.render("profile", { user });
+});
+
+app.get("/like/:id", authMiddleware, async (req, resp) => {
+  const post = await Post.findOne({ _id: req.params.id }).populate("user");
+
+  if (post.likes.indexOf(req.user.userid) === -1) {
+    post.likes.push(req.user.userid);
+  } else {
+    post.likes.splice(post.likes.indexOf(req.user.userid), 1);
+  }
+
+  await post.save();
+  resp.redirect("/profile");
+});
+
+app.get("/edit/:id", authMiddleware, async (req, resp) => {
+  const post = await Post.findOne({ _id: req.params.id }).populate("user");
+  resp.render("edit", { post });
+});
+
+app.post("/update/:id", authMiddleware, async (req, resp) => {
+  const newPost = req.body.newPost;
+  const postId = req.params.id;
+  const updatePost = await Post.findByIdAndUpdate(
+    postId,
+    {
+      content: newPost,
+    },
+    {
+      new: true,
+    }
+  );
+  await updatePost.save();
+  resp.redirect("/profile");
+});
+
+app.get("/delete/:id", authMiddleware, async (req, resp) => {
+  const postid = req.params.id;
+  await Post.findByIdAndDelete(postid);
+  resp.redirect("/profile");
 });
 
 app.post("/post", authMiddleware, async (req, res) => {
   const loggedInUser = req.user;
 
   const us = await User.findOne({ email: loggedInUser.email });
-  console.log(us);
   const { post } = req.body;
   const postCreation = await Post.create({
     user: us._id,
