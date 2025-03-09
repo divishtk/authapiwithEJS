@@ -6,13 +6,14 @@ import { Post } from "./models/posts.models.js";
 import bcrypt from "bcrypt";
 import { generateAccessToken } from "./utils/jwt.utils.js";
 import { authMiddleware } from "./middlewares/auth.middleware.js";
-
+import { upload } from "./assets/multer.utils.js";
 const app = express();
 
 
 
 app.use(express.static("./assets"));
 app.use(express.static("./public"));
+
 app.set("view engine", "ejs");
 app.set("views", "./views");
 
@@ -133,6 +134,20 @@ app.post("/post", authMiddleware, async (req, res) => {
 
   res.redirect("/profile");
 });
+
+
+app.get("/profile/upload", async (req, resp) => {
+  resp.render("profileupload");
+});
+
+
+app.post("/upload", authMiddleware,upload.single("image"),async (req, resp) => {
+  const user  = await User.findOne({_id:req.user.userid});
+  user.profilePic = req.file.filename;
+  await user.save();
+  resp.redirect("profile");
+});
+
 
 app.post("/login", async (req, resp) => {
   const { email, password } = req.body;
